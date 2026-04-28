@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>英语拼读发音网页｜IPA + 组合发音 + 单词发音</title>
+<style>
+  :root{--bg:#f6fbff;--card:#ffffff;--line:#d9e7f0;--text:#203040;--muted:#627487;--blue:#5aa7d6;--blue2:#eaf6fd;--green:#6fbf8f;--shadow:0 10px 24px rgba(0,0,0,.08)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:linear-gradient(180deg,#f6fbff 0%,#eef7fb 100%);color:var(--text)}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px}
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 24px 18px;box-shadow:var(--shadow)}
+  h1{margin:0 0 8px;font-size:34px}
+  .sub{color:var(--muted);font-size:16px;line-height:1.7}
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px;align-items:center}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap}
+  button{border:none;border-radius:14px;padding:10px 16px;background:#e8f4fb;color:#1e4f72;font-size:15px;cursor:pointer}
+  button.active{background:var(--blue);color:#fff}
+  .control{background:#f3f8fb;color:#35556d;border:1px solid var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow);transition:.2s transform,.2s box-shadow,.2s border-color}
+  .card:hover{transform:translateY(-2px)}
+  .card.playing{border-color:var(--green);box-shadow:0 0 0 4px rgba(111,191,143,.18),var(--shadow)}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .emoji{font-size:40px;line-height:1}
+  .blend{font-size:30px;font-weight:800;color:#1a6a97;background:var(--blue2);padding:6px 12px;border-radius:14px;min-width:76px;text-align:center}
+  .word{margin-top:14px;font-size:28px;font-weight:700}
+  .zh{margin-top:4px;font-size:18px;color:#35556d}
+  .ipa{margin-top:6px;font-family:"SFMono-Regular",Consolas,monospace;font-size:18px;color:#6b4fb3;background:#f6f1ff;padding:6px 10px;border-radius:10px;display:inline-block}
+  .tip{margin-top:12px;padding:10px 12px;background:#fbfdff;border:1px dashed var(--line);border-radius:12px;color:#4a6274;font-size:14px;line-height:1.6;min-height:66px}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .speakBlend{background:#fff1df;color:#8a5300}
+  .speakWord{background:#e8f8ef;color:#1b6a3b}
+  .footer{margin:24px 0 8px;color:var(--muted);font-size:14px;line-height:1.8}
+  .hidden{display:none}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .pill{background:#f4f8fb;border:1px solid var(--line);padding:8px 12px;border-radius:999px;color:#466174;font-size:14px}
+  select,input[type=range]{accent-color:#5aa7d6}
+  .small{font-size:13px;color:var(--muted)}
+
+  .tabs{align-items:center}
+  .emoji{font-size:40px;line-height:1.1}
+  #math .emoji{font-size:34px}
+  #math .blend{min-width:86px;font-size:24px}
+  #math .word{font-size:24px}
+  @media (max-width:640px){.tabs button{font-size:14px;padding:10px 14px} #math .emoji{font-size:30px} #math .word{font-size:22px}}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>英语拼读发音网页</h1>
+    <div class="sub">点击卡片可分别听“字母组合发音提示”和“单词完整发音”。页面保留了你之前要的内容：Emoji、英文、中文和国际音标（IPA），并额外加入了组合发音练习，更适合学习辅音组合和元音组合。</div>
+    <div class="toolbar">
+      <div class="tabs">
+        <button id="tab-consonants" class="active">辅音组合</button>
+        <button id="tab-vowels">元音组合</button>
+        <button id="tab-math">第三页：数学图形</button>
+      </div>
+      <button class="control" id="stopBtn">停止播放</button>
+      <button class="control" id="playAllCurrent">顺序播放当前页</button>
+      <label class="pill">语速 <input id="rate" type="range" min="0.7" max="1.1" step="0.05" value="0.9"></label>
+      <label class="pill">声音 <select id="voiceSelect"><option value="">自动选择英语声音</option></select></label>
+    </div>
+    <div class="legend">
+      <div class="pill">橙色按钮：听组合发音提示</div>
+      <div class="pill">绿色按钮：听完整单词</div>
+      <div class="pill">建议用 Chrome / Edge 打开，英文语音通常更稳定</div>
+    </div>
+  </div>
+
+  <div id="consonants" class="grid"></div>
+  <div id="vowels" class="grid hidden"></div>
+  <div id="math" class="grid hidden"></div>
+
+  <div class="footer">
+    使用说明：如果“组合发音”听起来不像纯音素，这是浏览器内置语音的正常限制；我已把它设计成“组合 + 示例词”的朗读方式，帮助你更容易把发音和单词对应起来。
+  </div>
+</div>
+
+<script>
+const consonants = [
+  {blend:'bl',emoji:'🧱',word:'block',zh:'积木',ipa:'/blɒk/',comboSpeak:'bl sound, bl, as in block',tip:'先发 /b/，马上滑到 /l/，连起来像 block 开头的声音'},
+  {blend:'cl',emoji:'⏰',word:'clock',zh:'时钟',ipa:'/klɒk/',comboSpeak:'cl sound, cl, as in clock',tip:'先发 /k/，再迅速接 /l/，像 clock 开头'},
+  {blend:'fl',emoji:'🌼',word:'flower',zh:'花',ipa:'/ˈflaʊə(r)/',comboSpeak:'fl sound, fl, as in flower',tip:'上牙轻碰下唇发 /f/，立刻滑到 /l/'},
+  {blend:'gl',emoji:'🧴',word:'glue',zh:'胶水',ipa:'/ɡluː/',comboSpeak:'gl sound, gl, as in glue',tip:'先发 /g/，后接清晰的 /l/'},
+  {blend:'br',emoji:'🧹',word:'broom',zh:'扫帚',ipa:'/bruːm/',comboSpeak:'br sound, br, as in broom',tip:'双唇发 /b/，很快滑向卷舌 /r/'},
+  {blend:'dr',emoji:'🥁',word:'drum',zh:'鼓',ipa:'/drʌm/',comboSpeak:'dr sound, dr, as in drum',tip:'舌尖轻碰上齿龈发 /d/，马上滑到 /r/'},
+  {blend:'fr',emoji:'🐸',word:'frog',zh:'青蛙',ipa:'/frɒɡ/',comboSpeak:'fr sound, fr, as in frog',tip:'先 /f/，再快速接 /r/'},
+  {blend:'gr',emoji:'🍇',word:'grapes',zh:'葡萄',ipa:'/ɡreɪps/',comboSpeak:'gr sound, gr, as in grapes',tip:'先 /g/，后 /r/，注意连读'},
+  {blend:'sm',emoji:'😊',word:'smile',zh:'微笑',ipa:'/smaɪl/',comboSpeak:'sm sound, sm, as in smile',tip:'先轻长音 /s/，再闭唇发 /m/'},
+  {blend:'sp',emoji:'🔴',word:'spot',zh:'斑点',ipa:'/spɒt/',comboSpeak:'sp sound, sp, as in spot',tip:'先 /s/ 再 /p/，气流要干净'},
+  {blend:'sk',emoji:'🦨',word:'skunk',zh:'臭鼬',ipa:'/skʌŋk/',comboSpeak:'sk sound, sk, as in skunk',tip:'先 /s/，后 /k/，像 skunk 开头'},
+  {blend:'sn',emoji:'🐌',word:'snail',zh:'蜗牛',ipa:'/sneɪl/',comboSpeak:'sn sound, sn, as in snail',tip:'先 /s/，再用鼻音 /n/'},
+  {blend:'sl',emoji:'🛝',word:'slide',zh:'滑梯',ipa:'/slaɪd/',comboSpeak:'sl sound, sl, as in slide',tip:'先 /s/，再舌尖抬起发 /l/'},
+  {blend:'pl',emoji:'🪴',word:'plant',zh:'植物',ipa:'/plɑːnt/',comboSpeak:'pl sound, pl, as in plant',tip:'双唇爆破 /p/ 后立刻发 /l/'},
+  {blend:'sc',emoji:'🧣',word:'scarf',zh:'围巾',ipa:'/skɑːf/',comboSpeak:'sc sound, sc, as in scarf',tip:'这里按 /sk/ 练习，更接近 scarf 开头'},
+  {blend:'cr',emoji:'🖍️',word:'crayon',zh:'蜡笔',ipa:'/ˈkreɪən/',comboSpeak:'cr sound, cr, as in crayon',tip:'先 /k/，马上滑向 /r/'},
+  {blend:'tw',emoji:'👯',word:'twins',zh:'双胞胎',ipa:'/twɪnz/',comboSpeak:'tw sound, tw, as in twins',tip:'舌尖发 /t/ 后，双唇迅速收圆到 /w/'},
+  {blend:'sw',emoji:'🏊',word:'swim',zh:'游泳',ipa:'/swɪm/',comboSpeak:'sw sound, sw, as in swim',tip:'先 /s/，然后嘴唇收圆发 /w/'},
+  {blend:'pr',emoji:'🥨',word:'pretzel',zh:'椒盐卷饼',ipa:'/ˈpretsəl/',comboSpeak:'pr sound, pr, as in pretzel',tip:'先 /p/ 后 /r/，注意要连起来'},
+  {blend:'st',emoji:'📮',word:'stamp',zh:'邮票',ipa:'/stæmp/',comboSpeak:'st sound, st, as in stamp',tip:'先 /s/，后 /t/'},
+  {blend:'tr',emoji:'🚚',word:'truck',zh:'卡车',ipa:'/trʌk/',comboSpeak:'tr sound, tr, as in truck',tip:'先 /t/ 再 /r/，像 truck 开头'},
+  {blend:'str',emoji:'🥤',word:'straw',zh:'吸管',ipa:'/strɔː/',comboSpeak:'str sound, str, as in straw',tip:'三个音连起来：/s/ + /t/ + /r/'},
+  {blend:'mp',emoji:'💡',word:'lamp',zh:'台灯',ipa:'/læmp/',comboSpeak:'mp ending sound, mp, as in lamp',tip:'这是结尾组合，先闭唇发 /m/，再轻爆破 /p/'},
+  {blend:'ck',emoji:'🦆',word:'duck',zh:'鸭子',ipa:'/dʌk/',comboSpeak:'ck ending sound, ck, as in duck',tip:'这里通常表示 /k/ 的尾音'},
+  {blend:'nk',emoji:'🖊️',word:'ink',zh:'墨水',ipa:'/ɪŋk/',comboSpeak:'nk ending sound, nk, as in ink',tip:'先鼻音 /ŋ/，再 /k/'},
+  {blend:'nt',emoji:'🐜',word:'ant',zh:'蚂蚁',ipa:'/ænt/',comboSpeak:'nt ending sound, nt, as in ant',tip:'先鼻音 /n/，再舌尖发 /t/'},
+  {blend:'nd',emoji:'🏞️',word:'pond',zh:'池塘',ipa:'/pɒnd/',comboSpeak:'nd ending sound, nd, as in pond',tip:'先 /n/，再接 /d/'},
+  {blend:'ch',emoji:'🍒',word:'cherry',zh:'樱桃',ipa:'/ˈtʃeri/',comboSpeak:'ch sound, ch, as in cherry',tip:'这是一个整体音，像 /tʃ/'},
+  {blend:'sh',emoji:'🐚',word:'shell',zh:'贝壳',ipa:'/ʃel/',comboSpeak:'sh sound, sh, as in shell',tip:'嘴唇略前伸，发长一点的 /ʃ/'},
+  {blend:'wh',emoji:'🎡',word:'wheel',zh:'轮子',ipa:'/wiːl/',comboSpeak:'wh sound, wh, as in wheel',tip:'课堂上可按 /w/ 先练习，像 wheel 开头'},
+  {blend:'ng',emoji:'👑',word:'king',zh:'国王',ipa:'/kɪŋ/',comboSpeak:'ng ending sound, ng, as in king',tip:'发鼻音 /ŋ/，声音从鼻腔出来'},
+  {blend:'th',emoji:'👍',word:'thumb',zh:'拇指',ipa:'/θʌm/',comboSpeak:'th sound, th, as in thumb',tip:'舌尖轻放齿间，吹气发 /θ/'}
+];
+
+
+const math = [
+  {blend:'+',emoji:'➕',word:'plus',zh:'加号',ipa:'/plʌs/',comboSpeak:'plus',tip:'用于表示加法。'},
+  {blend:'−',emoji:'➖',word:'minus',zh:'减号',ipa:'/ˈmaɪnəs/',comboSpeak:'minus',tip:'用于表示减法。'},
+  {blend:'=',emoji:'🟰',word:'equals',zh:'等于',ipa:'/ˈiːkwəlz/',comboSpeak:'equals',tip:'表示两边数量相等。'},
+  {blend:'>',emoji:'📈',word:'greater than',zh:'大于',ipa:'/ˈɡreɪtər ðæn/',comboSpeak:'greater than',tip:'左边比右边大。'},
+  {blend:'<',emoji:'📉',word:'less than',zh:'小于',ipa:'/les ðæn/',comboSpeak:'less than',tip:'左边比右边小。'},
+  {blend:'2-D',emoji:'🔺',word:'triangle',zh:'三角形',ipa:'/ˈtraɪæŋɡəl/',comboSpeak:'triangle',tip:'有 3 条边的平面图形。'},
+  {blend:'2-D',emoji:'🟪',word:'square',zh:'正方形',ipa:'/skwer/',comboSpeak:'square',tip:'4 条边一样长的平面图形。'},
+  {blend:'2-D',emoji:'▭',word:'rectangle',zh:'长方形',ipa:'/ˈrekˌtæŋɡəl/',comboSpeak:'rectangle',tip:'对边相等的平面图形。'},
+  {blend:'2-D',emoji:'⚪',word:'circle',zh:'圆形',ipa:'/ˈsɝːkəl/',comboSpeak:'circle',tip:'没有角的平面图形。'},
+  {blend:'2-D',emoji:'⬡',word:'hexagon',zh:'六边形',ipa:'/ˈheksəɡɑːn/',comboSpeak:'hexagon',tip:'有 6 条边的平面图形。'},
+  {blend:'2-D',emoji:'🥚',word:'oval',zh:'椭圆形',ipa:'/ˈoʊvəl/',comboSpeak:'oval',tip:'像拉长的圆。'},
+  {blend:'3-D',emoji:'🔺🏛️',word:'pyramid',zh:'金字塔',ipa:'/ˈpɪrəmɪd/',comboSpeak:'pyramid',tip:'有尖顶、底面较大的立体图形。'},
+  {blend:'3-D',emoji:'🧊',word:'cube',zh:'立方体',ipa:'/kjuːb/',comboSpeak:'cube',tip:'6 个面都一样大的立体图形。'},
+  {blend:'3-D',emoji:'📦',word:'rectangular prism',zh:'长方体',ipa:'/rekˈtæŋɡjələr ˈprɪzəm/',comboSpeak:'rectangular prism',tip:'像盒子一样的立体图形。'},
+  {blend:'3-D',emoji:'⚽',word:'sphere',zh:'球体',ipa:'/sfɪr/',comboSpeak:'sphere',tip:'像球一样圆的立体图形。'},
+  {blend:'3-D',emoji:'🍦',word:'cone',zh:'圆锥体',ipa:'/koʊn/',comboSpeak:'cone',tip:'上尖下圆，像冰淇淋甜筒。'},
+  {blend:'3-D',emoji:'🥫',word:'cylinder',zh:'圆柱体',ipa:'/ˈsɪləndər/',comboSpeak:'cylinder',tip:'上下是圆面的立体图形。'}
+];
+
+const vowels = [
+  {blend:'ay',emoji:'🌾',word:'hay',zh:'干草',ipa:'/heɪ/',comboSpeak:'ay sound, ay, as in hay',tip:'长元音 /eɪ/，像 say, day 里的 ay'},
+  {blend:'ew',emoji:'🍬',word:'chew',zh:'咀嚼',ipa:'/tʃuː/',comboSpeak:'ew sound, ew, as in chew',tip:'通常可练成 /juː/ 或 /uː/，这里按 chew 的 /uː/ 记忆'},
+  {blend:'ow',emoji:'🚜',word:'mow',zh:'割草',ipa:'/məʊ/',comboSpeak:'ow sound, ow, as in mow',tip:'这里是 /oʊ/ 类长音，不是 cow 的 /aʊ/'},
+  {blend:'oy',emoji:'👦',word:'boy',zh:'男孩',ipa:'/bɔɪ/',comboSpeak:'oy sound, oy, as in boy',tip:'双元音 /ɔɪ/'},
+  {blend:'aw',emoji:'🎨',word:'draw',zh:'画画',ipa:'/drɔː/',comboSpeak:'aw sound, aw, as in draw',tip:'张口圆唇，发 /ɔː/'},
+  {blend:'ar',emoji:'🚗',word:'car',zh:'小汽车',ipa:'/kɑː(r)/',comboSpeak:'ar sound, ar, as in car',tip:'核心音接近 /ɑː/'},
+  {blend:'ir',emoji:'🐦',word:'bird',zh:'小鸟',ipa:'/bɜːd/',comboSpeak:'ir sound, ir, as in bird',tip:'按 r-controlled vowel 练习'},
+  {blend:'or',emoji:'🏰',word:'fort',zh:'堡垒',ipa:'/fɔːt/',comboSpeak:'or sound, or, as in fort',tip:'核心音近似 /ɔː/'},
+  {blend:'ur',emoji:'🐱',word:'fur',zh:'毛皮',ipa:'/fɜː(r)/',comboSpeak:'ur sound, ur, as in fur',tip:'与 ir, er 常常听起来接近'},
+  {blend:'er',emoji:'🌿',word:'fern',zh:'蕨类植物',ipa:'/fɜːn/',comboSpeak:'er sound, er, as in fern',tip:'卷舌控制元音，接近 /ɜːr/ 类感觉'},
+  {blend:'a_e',emoji:'🐍',word:'snake',zh:'蛇',ipa:'/sneɪk/',comboSpeak:'a consonant e pattern, long a, as in snake',tip:'这是 magic e 结构，读长音 /eɪ/'},
+  {blend:'o_e',emoji:'🦴',word:'bone',zh:'骨头',ipa:'/bəʊn/',comboSpeak:'o consonant e pattern, long o, as in bone',tip:'magic e 让 o 读 /oʊ/'},
+  {blend:'i_e',emoji:'🪁',word:'kite',zh:'风筝',ipa:'/kaɪt/',comboSpeak:'i consonant e pattern, long i, as in kite',tip:'magic e 让 i 读 /aɪ/'},
+  {blend:'u_e',emoji:'🧊',word:'cube',zh:'立方体',ipa:'/kjuːb/',comboSpeak:'u consonant e pattern, long u, as in cube',tip:'常读 /juː/'},
+  {blend:'ee',emoji:'🌲',word:'tree',zh:'树',ipa:'/triː/',comboSpeak:'ee sound, ee, as in tree',tip:'长元音 /iː/'},
+  {blend:'oo',emoji:'🦁',word:'zoo',zh:'动物园',ipa:'/zuː/',comboSpeak:'oo sound, oo, as in zoo',tip:'这里是长音 /uː/'},
+  {blend:'ai',emoji:'🌧️',word:'rain',zh:'下雨',ipa:'/reɪn/',comboSpeak:'ai sound, ai, as in rain',tip:'长元音 /eɪ/'},
+  {blend:'ea',emoji:'🍽️',word:'eat',zh:'吃',ipa:'/iːt/',comboSpeak:'ea sound, ea, as in eat',tip:'这里是 /iː/'},
+  {blend:'oa',emoji:'⛵',word:'boat',zh:'小船',ipa:'/bəʊt/',comboSpeak:'oa sound, oa, as in boat',tip:'长元音 /oʊ/'},
+  {blend:'oo',emoji:'📖',word:'book',zh:'书',ipa:'/bʊk/',comboSpeak:'oo sound, oo, as in book',tip:'这里是短一点的 /ʊ/'},
+  {blend:'ou',emoji:'👄',word:'mouth',zh:'嘴巴',ipa:'/maʊθ/',comboSpeak:'ou sound, ou, as in mouth',tip:'双元音 /aʊ/'},
+  {blend:'oi',emoji:'🪙',word:'coin',zh:'硬币',ipa:'/kɔɪn/',comboSpeak:'oi sound, oi, as in coin',tip:'双元音 /ɔɪ/'},
+  {blend:'ea',emoji:'🍞',word:'bread',zh:'面包',ipa:'/bred/',comboSpeak:'ea sound, ea, as in bread',tip:'这里不是 /iː/，而是 /e/'},
+  {blend:'ui',emoji:'🧃',word:'juice',zh:'果汁',ipa:'/dʒuːs/',comboSpeak:'ui sound, ui, as in juice',tip:'常见于 juice 这类词，听感接近 /uː/ 或 /juː/'}
+];
+
+let currentTab = 'consonants';
+let voices = [];
+let activeCard = null;
+
+function renderCards(id, data){
+  const root = document.getElementById(id);
+  root.innerHTML = data.map((item, idx) => `
+    <div class="card" id="${id}-card-${idx}">
+      <div class="top">
+        <div class="emoji">${item.emoji}</div>
+        <div class="blend">${item.blend}</div>
+      </div>
+      <div class="word">${item.word}</div>
+      <div class="zh">${item.zh}</div>
+      <div class="ipa">${item.ipa}</div>
+      <div class="tip">${item.tip}</div>
+      <div class="actions">
+        <button class="speakBlend" onclick="speakItem('${id}', ${idx}, 'blend')">听组合</button>
+        <button class="speakWord" onclick="speakItem('${id}', ${idx}, 'word')">听单词</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function pickVoice(){
+  const sel = document.getElementById('voiceSelect').value;
+  if(sel){
+    return voices.find(v => v.name === sel) || null;
+  }
+  return voices.find(v => /en-US/i.test(v.lang)) || voices.find(v => /en-GB/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang)) || null;
+}
+
+function populateVoices(){
+  voices = speechSynthesis.getVoices();
+  const select = document.getElementById('voiceSelect');
+  const current = select.value;
+  const options = ['<option value="">自动选择英语声音</option>'].concat(
+    voices.filter(v => /^en/i.test(v.lang)).map(v => `<option value="${v.name.replace(/"/g,'&quot;')}">${v.name} (${v.lang})</option>`)
+  );
+  select.innerHTML = options.join('');
+  if([...select.options].some(o => o.value === current)) select.value = current;
+}
+
+function highlight(cardId){
+  if(activeCard) activeCard.classList.remove('playing');
+  activeCard = document.getElementById(cardId);
+  if(activeCard) activeCard.classList.add('playing');
+}
+
+function clearHighlight(){
+  if(activeCard) activeCard.classList.remove('playing');
+  activeCard = null;
+}
+
+function speak(text, cardId){
+  speechSynthesis.cancel();
+  const ut = new SpeechSynthesisUtterance(text);
+  ut.lang = 'en-US';
+  ut.rate = parseFloat(document.getElementById('rate').value || '0.9');
+  const voice = pickVoice();
+  if(voice) ut.voice = voice;
+  ut.onstart = () => highlight(cardId);
+  ut.onend = clearHighlight;
+  ut.onerror = clearHighlight;
+  speechSynthesis.speak(ut);
+}
+
+window.speakItem = function(id, idx, type){
+  const data = id === 'consonants' ? consonants : (id === 'vowels' ? vowels : math);
+  const item = data[idx];
+  const cardId = `${id}-card-${idx}`;
+  const text = type === 'blend' ? item.comboSpeak : item.word;
+  speak(text, cardId);
+}
+
+async function playAllCurrent(){
+  const data = currentTab === 'consonants' ? consonants : (currentTab === 'vowels' ? vowels : math);
+  for(let i=0;i<data.length;i++){
+    await new Promise(resolve => {
+      speechSynthesis.cancel();
+      const item = data[i];
+      const cardId = `${currentTab}-card-${i}`;
+      const voice = pickVoice();
+      const rate = parseFloat(document.getElementById('rate').value || '0.9');
+      const seq = [item.comboSpeak, item.word];
+      let j = 0;
+      function next(){
+        if(j >= seq.length){ clearHighlight(); resolve(); return; }
+        const ut = new SpeechSynthesisUtterance(seq[j++]);
+        ut.lang = 'en-US';
+        ut.rate = rate;
+        if(voice) ut.voice = voice;
+        ut.onstart = () => highlight(cardId);
+        ut.onend = () => setTimeout(next, 180);
+        ut.onerror = () => setTimeout(next, 80);
+        speechSynthesis.speak(ut);
+      }
+      next();
+    });
+    await new Promise(r => setTimeout(r, 180));
+  }
+}
+
+document.getElementById('playAllCurrent').addEventListener('click', playAllCurrent);
+document.getElementById('stopBtn').addEventListener('click', () => { speechSynthesis.cancel(); clearHighlight(); });
+document.getElementById('tab-consonants').addEventListener('click', () => switchTab('consonants'));
+document.getElementById('tab-vowels').addEventListener('click', () => switchTab('vowels'));
+document.getElementById('tab-math').addEventListener('click', () => switchTab('math'));
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('consonants').classList.toggle('hidden', tab !== 'consonants');
+  document.getElementById('vowels').classList.toggle('hidden', tab !== 'vowels');
+  document.getElementById('math').classList.toggle('hidden', tab !== 'math');
+  document.getElementById('tab-consonants').classList.toggle('active', tab === 'consonants');
+  document.getElementById('tab-vowels').classList.toggle('active', tab === 'vowels');
+  document.getElementById('tab-math').classList.toggle('active', tab === 'math');
+  speechSynthesis.cancel();
+  clearHighlight();
+}
+
+renderCards('consonants', consonants);
+renderCards('vowels', vowels);
+renderCards('math', math);
+populateVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
+</script>
+</body>
+</html>
